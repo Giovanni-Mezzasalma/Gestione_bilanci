@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Bilancio Completo - Versione Finale</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 36px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        select, input, textarea {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .account-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .account-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .account-type {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .account-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .account-balance {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+        }
+
+        .kpi-card.income { border-left-color: #10b981; }
+        .kpi-card.expense { border-left-color: #ef4444; }
+        .kpi-card.net { border-left-color: #3b82f6; }
+        .kpi-card.investment { border-left-color: #8b5cf6; }
+
+        .kpi-label {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: #4b5563;
+            font-size: 18px;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-income { background: #d1fae5; color: #065f46; }
+        .badge-necessity { background: #fed7aa; color: #92400e; }
+        .badge-extra { background: #bfdbfe; color: #1e40af; }
+        .badge-transfer { background: #e9d5ff; color: #6b21a8; }
+        .badge-withdrawal { background: #fce7f3; color: #9f1239; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-box .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .comparison-table {
+            margin-top: 20px;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .trend-up {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .trend-down {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .category-manager {
+            display: grid;
+            gap: 25px;
+        }
+
+        .category-section {
+            border: 2px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 20px;
+            background: #f9fafb;
+        }
+
+        .category-section h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .subcategory-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .subcategory-item {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .subcategory-item button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-subcategory {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .add-subcategory input {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Gestione Bilancio Completo</h1>
+            
+            <div class="quick-actions">
+                <button class="btn btn-primary" onclick="openTransactionModal()">💵 Entrata/Spesa</button>
+                <button class="btn btn-success" onclick="openTransferModal()">🔄 Trasferimento</button>
+                <button class="btn btn-info" onclick="openAccountModal()">🏦 Gestisci Conti</button>
+                <button class="btn btn-warning" onclick="openCategoryModal()">📂 Gestisci Categorie</button>
+            </div>
+
+            <div class="controls">
+                <select id="monthSelect" onchange="updateView()">
+                    <option value="0">Gennaio</option>
+                    <option value="1">Febbraio</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Aprile</option>
+                    <option value="4">Maggio</option>
+                    <option value="5">Giugno</option>
+                    <option value="6">Luglio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Settembre</option>
+                    <option value="9">Ottobre</option>
+                    <option value="10">Novembre</option>
+                    <option value="11">Dicembre</option>
+                </select>
+                
+                <select id="yearSelect" onchange="updateView()">
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+                <button class="tab" onclick="switchTab('accounts')">🏦 Conti</button>
+                <button class="tab" onclick="switchTab('transactions')">📝 Transazioni</button>
+                <button class="tab" onclick="switchTab('categories')">📂 Categorie</button>
+                <button class="tab" onclick="switchTab('analysis')">📈 Analisi</button>
+            </div>
+        </div>
+
+        <div id="dashboardView">
+            <div class="kpi-grid" id="kpiGrid"></div>
+        </div>
+
+        <div id="accountsView" style="display: none;">
+            <div class="card">
+                <h2>I Tuoi Conti</h2>
+                <div id="accountsGrid"></div>
+            </div>
+        </div>
+
+        <div id="transactionsView" style="display: none;">
+            <div class="card">
+                <h2>Tutte le Transazioni</h2>
+                <div id="transactionsList"></div>
+            </div>
+        </div>
+
+        <div id="categoriesView" style="display: none;">
+            <div class="card">
+                <h2>Spese per Categoria</h2>
+                <div id="categoriesList"></div>
+            </div>
+        </div>
+
+        <div id="analysisView" style="display: none;">
+            <div class="card">
+                <h2>📈 Analisi Avanzata</h2>
+                
+                <h3>Andamento Ultimi 6 Mesi</h3>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <h3>Distribuzione Spese Mensili</h3>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="pieChart"></canvas>
+                </div>
+
+                <h3>Confronto per Categoria (Top 10)</h3>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+
+                <h3>Statistiche e Medie</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+
+                <h3>Confronto Mensile</h3>
+                <div class="comparison-table" id="comparisonTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Transazione -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuova Transazione</h2>
+                <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
+            </div>
+
+            <form onsubmit="addTransaction(event)">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="txDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="txType" onchange="updateTransactionCategories()" required>
+                        <option value="income">Entrata</option>
+                        <option value="expense-necessity" selected>Spesa di Necessità</option>
+                        <option value="expense-extra">Spesa Extra</option>
+                        <option value="withdrawal">Prelievo</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="txCategory" required>
+                            <option value="">Seleziona</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Conto</label>
+                        <select id="txAccount" required>
+                            <option value="">Seleziona</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Importo (€)</label>
+                    <input type="number" id="txAmount" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Descrizione (opzionale)</label>
+                    <input type="text" id="txDescription">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Aggiungi</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('transactionModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Trasferimento -->
+    <div class="modal" id="transferModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuovo Trasferimento</h2>
+                <button class="close-btn" onclick="closeModal('transferModal')">&times;</button>
+            </div>
+
+            <form onsubmit="addTransfer(event)">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="trDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo Operazione</label>
+                    <select id="trType" required>
+                        <option value="Trasferimento">Trasferimento tra conti</option>
+                        <option value="Risparmio">Verso Risparmio</option>
+                        <option value="Investimenti">Verso Investimenti</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Da Conto</label>
+                        <select id="trFrom" required>
+                            <option value="">Seleziona</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>A Conto</label>
+                        <select id="trTo" required>
+                            <option value="">Seleziona</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Importo (€)</label>
+                    <input type="number" id="trAmount" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Descrizione (opzionale)</label>
+                    <input type="text" id="trDescription">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Trasferisci</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('transferModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestione Conti -->
+    <div class="modal" id="accountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gestisci Conti</h2>
+                <button class="close-btn" onclick="closeModal('accountModal')">&times;</button>
+            </div>
+
+            <div id="accountManagement"></div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Aggiungi Nuovo Conto</h3>
+            <form onsubmit="addAccount(event)">
+                <div class="form-group">
+                    <label>Nome Conto</label>
+                    <input type="text" id="accName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="accType" required>
+                            <option value="current">Conto Corrente</option>
+                            <option value="savings">Risparmio</option>
+                            <option value="investment">Investimento</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Saldo Iniziale (€)</label>
+                        <input type="number" id="accBalance" step="0.01" value="0" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-info" style="width: 100%;">Aggiungi Conto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestione Categorie -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gestisci Categorie e Sottocategorie</h2>
+                <button class="close-btn" onclick="closeModal('categoryModal')">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-secondary btn-small" onclick="resetCategoriesToDefault()">🔄 Ripristina Categorie di Default</button>
+            </div>
+
+            <div class="category-manager" id="categoryManager"></div>
+        </div>
+    </div>
+
+    <script>
+        // Categorie di default
+        const defaultCategories = {
+            income: ['Reddito Principale', 'Reddito Secondario', 'Affitto', 'Vendita', 'Altro'],
+            'expense-necessity': {
+                'Casa': ['Mutuo/Affitto', 'Elettricità', 'Gas', 'Acqua', 'Manutenzione Casa', 'Tasse', 'Telefono/Internet', 'Assicurazione Casa', 'Spesa/Cibo'],
+                'Trasporti': ['Rate auto', 'Assicurazione Auto', 'Benzina', 'Manutenzione', 'Bollo', 'Pedaggi', 'Parcheggi', 'Mezzi pubblici', 'Multa'],
+                'Salute': ['Medicinali', 'Polizze', 'Visite mediche/esami', 'Sport', 'Occhiali/Lenti'],
+                'Figli': ['Scuola', 'Abbigliamento', 'Attività extra', 'Babysitting'],
+                'Istruzione': ['Retta scolastica', 'Libri scolastici', 'Formazione'],
+                'Altro': ['Abbigliamento/Calzature', 'Rate prestito', 'Rate carta di credito', 'Una tantum']
+            },
+            'expense-extra': {
+                'Svago': ['Ristorazione', 'Bar', 'Cinema/Uscite/Eventi', 'Abbonamenti digitali', 'Cura personale', 'Donazioni e Regali', 'Divertimento', 'Fumo', 'Arredamento', 'Cultura', 'Viaggi', 'Shopping'],
+                'Animali': ['Cibo', 'Veterinario']
+            },
+            'withdrawal': ['Prelievo']
+        };
+
+        // Dati iniziali
+        const defaultAccounts = [
+            { id: 1, name: 'N26', type: 'current', initialBalance: 0 },
+            { id: 2, name: 'Intesa SanPaolo', type: 'current', initialBalance: 0 },
+            { id: 3, name: 'Revolut', type: 'current', initialBalance: 0 },
+            { id: 4, name: 'PayPal', type: 'current', initialBalance: 0 }
+        ];
+
+        // Variabili globali per i grafici
+        let trendChart = null;
+        let pieChart = null;
+        let categoryChart = null;
+
+        // Inizializza
+        const today = new Date();
+        document.getElementById('monthSelect').value = today.getMonth();
+        document.getElementById('yearSelect').value = today.getFullYear();
+        document.getElementById('txDate').value = today.toISOString().split('T')[0];
+        document.getElementById('trDate').value = today.toISOString().split('T')[0];
+
+        // Carica/Salva dati
+        function loadData(key, defaultValue) {
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : defaultValue;
+        }
+
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        let accounts = loadData('accounts', defaultAccounts);
+        let transactions = loadData('transactions', []);
+        let categories = loadData('categories', JSON.parse(JSON.stringify(defaultCategories)));
+
+        // Gestione Categorie
+        function openCategoryModal() {
+            document.getElementById('categoryModal').classList.add('active');
+            renderCategoryManager();
+        }
+
+        function renderCategoryManager() {
+            const container = document.getElementById('categoryManager');
+            
+            const typeLabels = {
+                'income': 'Entrate',
+                'expense-necessity': 'Spese di Necessità',
+                'expense-extra': 'Spese Extra',
+                'withdrawal': 'Prelievi'
+            };
+
+            let html = '';
+
+            Object.keys(categories).forEach(type => {
+                html += `<div class="category-section">
+                    <h4>${typeLabels[type]}</h4>`;
+
+                const cats = categories[type];
+                
+                if (Array.isArray(cats)) {
+                    // Lista semplice
+                    html += `<div class="subcategory-list">`;
+                    cats.forEach((cat, index) => {
+                        html += `
+                            <div class="subcategory-item">
+                                <span>${cat}</span>
+                                <button type="button" onclick="removeSimpleCategory('${type}', ${index})">×</button>
+                            </div>
+                        `;
+                    });
+                    html += `</div>
+                        <div class="add-subcategory">
+                            <input type="text" id="new-${type}" placeholder="Nuova categoria">
+                            <button type="button" class="btn btn-primary btn-small" onclick="addSimpleCategory('${type}')">Aggiungi</button>
+                        </div>`;
+                } else {
+                    // Categorie con gruppi
+                    Object.keys(cats).forEach(group => {
+                        html += `
+                            <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <strong>${group}</strong>
+                                    <button type="button" class="btn-danger btn-small" onclick="removeGroup('${type}', '${group}')">Elimina Gruppo</button>
+                                </div>
+                                <div class="subcategory-list">`;
+                        
+                        cats[group].forEach((subcat, index) => {
+                            html += `
+                                <div class="subcategory-item">
+                                    <span>${subcat}</span>
+                                    <button type="button" onclick="removeGroupCategory('${type}', '${group}', ${index})">×</button>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div>
+                                <div class="add-subcategory">
+                                    <input type="text" id="new-${type}-${group}" placeholder="Nuova sottocategoria">
+                                    <button type="button" class="btn btn-primary btn-small" onclick="addGroupCategory('${type}', '${group}')">Aggiungi</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // Aggiungi nuovo gruppo
+                    html += `
+                        <div style="margin-top: 15px;">
+                            <div class="add-subcategory">
+                                <input type="text" id="new-group-${type}" placeholder="Nome nuovo gruppo">
+                                <button type="button" class="btn btn-success btn-small" onclick="addNewGroup('${type}')">Aggiungi Gruppo</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function addSimpleCategory(type) {
+            const input = document.getElementById(`new-${type}`);
+            const value = input.value.trim();
+            
+            if (value) {
+                categories[type].push(value);
+                saveData('categories', categories);
+                input.value = '';
+                renderCategoryManager();
+            }
+        }
+
+        function removeSimpleCategory(type, index) {
+            if (confirm('Sei sicuro di voler eliminare questa categoria?')) {
+                categories[type].splice(index, 1);
+                saveData('categories', categories);
+                renderCategoryManager();
+            }
+        }
+
+        function addGroupCategory(type, group) {
+            const input = document.getElementById(`new-${type}-${group}`);
+            const value = input.value.trim();
+            
+            if (value) {
+                categories[type][group].push(value);
+                saveData('categories', categories);
+                input.value = '';
+                renderCategoryManager();
+            }
+        }
+
+        function removeGroupCategory(type, group, index) {
+            if (confirm('Sei sicuro di voler eliminare questa sottocategoria?')) {
+                categories[type][group].splice(index, 1);
+                saveData('categories', categories);
+                renderCategoryManager();
+            }
+        }
+
+        function addNewGroup(type) {
+            const input = document.getElementById(`new-group-${type}`);
+            const value = input.value.trim();
+            
+            if (value) {
+                categories[type][value] = [];
+                saveData('categories', categories);
+                input.value = '';
+                renderCategoryManager();
+            }
+        }
+
+        function removeGroup(type, group) {
+            if (confirm(`Sei sicuro di voler eliminare il gruppo "${group}" e tutte le sue sottocategorie?`)) {
+                delete categories[type][group];
+                saveData('categories', categories);
+                renderCategoryManager();
+            }
+        }
+
+        function resetCategoriesToDefault() {
+            if (confirm('Sei sicuro di voler ripristinare tutte le categorie ai valori di default? Questa azione non può essere annullata.')) {
+                categories = JSON.parse(JSON.stringify(defaultCategories));
+                saveData('categories', categories);
+                renderCategoryManager();
+                alert('Categorie ripristinate!');
+            }
+        }
+
+        // Modal
+        function openTransactionModal() {
+            document.getElementById('transactionModal').classList.add('active');
+            updateTransactionCategories();
+            populateAccountsSelect('txAccount');
+        }
+
+        function openTransferModal() {
+            document.getElementById('transferModal').classList.add('active');
+            populateAccountsSelect('trFrom');
+            populateAccountsSelect('trTo');
+        }
+
+        function openAccountModal() {
+            document.getElementById('accountModal').classList.add('active');
+            updateAccountManagement();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Popola select conti
+        function populateAccountsSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Seleziona</option>';
+            accounts.forEach(acc => {
+                const option = document.createElement('option');
+                option.value = acc.id;
+                option.textContent = `${acc.name} (${getAccountTypeLabel(acc.type)})`;
+                select.appendChild(option);
+            });
+        }
+
+        function getAccountTypeLabel(type) {
+            const labels = {
+                'current': 'Corrente',
+                'savings': 'Risparmio',
+                'investment': 'Investimento'
+            };
+            return labels[type] || type;
+        }
+
+        // Aggiorna categorie
+        function updateTransactionCategories() {
+            const type = document.getElementById('txType').value;
+            const select = document.getElementById('txCategory');
+            select.innerHTML = '<option value="">Seleziona</option>';
+            
+            const cats = categories[type];
+            if (Array.isArray(cats)) {
+                cats.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    select.appendChild(option);
+                });
+            } else {
+                Object.keys(cats).forEach(group => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = group;
+                    cats[group].forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        optgroup.appendChild(option);
+                    });
+                    select.appendChild(optgroup);
+                });
+            }
+        }
+
+        // Aggiungi transazione
+        function addTransaction(event) {
+            event.preventDefault();
+            
+            const transaction = {
+                id: Date.now(),
+                date: document.getElementById('txDate').value,
+                type: document.getElementById('txType').value,
+                category: document.getElementById('txCategory').value,
+                account: parseInt(document.getElementById('txAccount').value),
+                amount: parseFloat(document.getElementById('txAmount').value),
+                description: document.getElementById('txDescription').value
+            };
+
+            transactions.push(transaction);
+            saveData('transactions', transactions);
+
+            closeModal('transactionModal');
+            document.getElementById('txAmount').value = '';
+            document.getElementById('txDescription').value = '';
+            updateView();
+        }
+
+        // Aggiungi trasferimento
+        function addTransfer(event) {
+            event.preventDefault();
+            
+            const transfer = {
+                id: Date.now(),
+                date: document.getElementById('trDate').value,
+                type: 'transfer',
+                operationType: document.getElementById('trType').value,
+                fromAccount: parseInt(document.getElementById('trFrom').value),
+                toAccount: parseInt(document.getElementById('trTo').value),
+                amount: parseFloat(document.getElementById('trAmount').value),
+                description: document.getElementById('trDescription').value
+            };
+
+            transactions.push(transfer);
+            saveData('transactions', transactions);
+
+            closeModal('transferModal');
+            document.getElementById('trAmount').value = '';
+            document.getElementById('trDescription').value = '';
+            updateView();
+        }
+
+        // Gestione conti
+        function updateAccountManagement() {
+            const container = document.getElementById('accountManagement');
+            container.innerHTML = `
+                <div style="display: grid; gap: 15px;">
+                    ${accounts.map(acc => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f9fafb; border-radius: 10px;">
+                            <div>
+                                <strong>${acc.name}</strong>
+                                <span style="color: #6b7280; font-size: 14px; margin-left: 10px;">(${getAccountTypeLabel(acc.type)})</span>
+                                <div style="color: #667eea; font-weight: bold; margin-top: 5px;">€${calculateAccountBalance(acc.id).toFixed(2)}</div>
+                            </div>
+                            <button class="btn-danger" onclick="deleteAccount(${acc.id})">Elimina</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function addAccount(event) {
+            event.preventDefault();
+            
+            const account = {
+                id: Date.now(),
+                name: document.getElementById('accName').value,
+                type: document.getElementById('accType').value,
+                initialBalance: parseFloat(document.getElementById('accBalance').value)
+            };
+
+            accounts.push(account);
+            saveData('accounts', accounts);
+
+            document.getElementById('accName').value = '';
+            document.getElementById('accBalance').value = '0';
+            updateAccountManagement();
+            updateView();
+        }
+
+        function deleteAccount(id) {
+            if (confirm('Sei sicuro? Questo eliminerà anche tutte le transazioni associate.')) {
+                accounts = accounts.filter(a => a.id !== id);
+                transactions = transactions.filter(t => {
+                    if (t.type === 'transfer') {
+                        return t.fromAccount !== id && t.toAccount !== id;
+                    }
+                    return t.account !== id;
+                });
+                saveData('accounts', accounts);
+                saveData('transactions', transactions);
+                updateAccountManagement();
+                updateView();
+            }
+        }
+
+        // Calcola saldo conto
+        function calculateAccountBalance(accountId) {
+            const account = accounts.find(a => a.id === accountId);
+            let balance = account ? account.initialBalance : 0;
+
+            transactions.forEach(t => {
+                if (t.type === 'transfer') {
+                    if (t.fromAccount === accountId) balance -= t.amount;
+                    if (t.toAccount === accountId) balance += t.amount;
+                } else if (t.account === accountId) {
+                    if (t.type === 'income') balance += t.amount;
+                    else balance -= t.amount;
+                }
+            });
+
+            return balance;
+        }
+
+        // Elimina transazione
+        function deleteTransaction(id) {
+            if (confirm('Sei sicuro di voler eliminare questa transazione?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveData('transactions', transactions);
+                updateView();
+            }
+        }
+
+        // Filtra transazioni
+        function getFilteredTransactions() {
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearSelect').value);
+
+            return transactions.filter(t => {
+                const date = new Date(t.date);
+                return date.getMonth() === month && date.getFullYear() === year;
+            });
+        }
+
+        // Calcola statistiche
+        function calculateStats(trans) {
+            let income = 0;
+            let expenseNecessity = 0;
+            let expenseExtra = 0;
+            let withdrawals = 0;
+
+            trans.forEach(t => {
+                if (t.type === 'income') income += t.amount;
+                else if (t.type === 'expense-necessity') expenseNecessity += t.amount;
+                else if (t.type === 'expense-extra') expenseExtra += t.amount;
+                else if (t.type === 'withdrawal') withdrawals += t.amount;
+            });
+
+            return {
+                income,
+                expenseNecessity,
+                expenseExtra,
+                withdrawals,
+                totalExpenses: expenseNecessity + expenseExtra + withdrawals,
+                net: income - expenseNecessity - expenseExtra - withdrawals
+            };
+        }
+
+        // Ottieni dati ultimi 6 mesi
+        function getLast6MonthsData() {
+            const currentMonth = parseInt(document.getElementById('monthSelect').value);
+            const currentYear = parseInt(document.getElementById('yearSelect').value);
+            const months = [];
+
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(currentYear, currentMonth - i, 1);
+                const month = date.getMonth();
+                const year = date.getFullYear();
+                
+                const monthTrans = transactions.filter(t => {
+                    const tDate = new Date(t.date);
+                    return tDate.getMonth() === month && tDate.getFullYear() === year;
+                });
+
+                const stats = calculateStats(monthTrans);
+                
+                months.push({
+                    label: date.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' }),
+                    income: stats.income,
+                    expenses: stats.totalExpenses,
+                    net: stats.net
+                });
+            }
+
+            return months;
+        }
+
+        // Aggiorna vista
+        function updateView() {
+            const filtered = getFilteredTransactions();
+            const stats = calculateStats(filtered);
+
+            // KPI
+            const totalBalance = accounts.reduce((sum, acc) => sum + calculateAccountBalance(acc.id), 0);
+            
+            document.getElementById('kpiGrid').innerHTML = `
+                <div class="kpi-card income">
+                    <div class="kpi-label">Patrimonio Totale</div>
+                    <div class="kpi-value">€${totalBalance.toFixed(2)}</div>
+                </div>
+                <div class="kpi-card income">
+                    <div class="kpi-label">Entrate</div>
+                    <div class="kpi-value">€${stats.income.toFixed(2)}</div>
+                </div>
+                <div class="kpi-card expense">
+                    <div class="kpi-label">Uscite Totali</div>
+                    <div class="kpi-value">€${stats.totalExpenses.toFixed(2)}</div>
+                </div>
+                <div class="kpi-card net">
+                    <div class="kpi-label">Netto Mensile</div>
+                    <div class="kpi-value" style="color: ${stats.net >= 0 ? '#10b981' : '#ef4444'}">€${stats.net.toFixed(2)}</div>
+                </div>
+            `;
+
+            updateAccountsView();
+            updateTransactionsList(filtered);
+            updateCategoriesList(filtered);
+            updateAnalysisView();
+        }
+
+        // Vista conti
+        function updateAccountsView() {
+            const grid = document.getElementById('accountsGrid');
+            grid.innerHTML = `
+                <div class="accounts-grid">
+                    ${accounts.map(acc => {
+                        const balance = calculateAccountBalance(acc.id);
+                        return `
+                            <div class="account-card">
+                                <div class="account-type">${getAccountTypeLabel(acc.type)}</div>
+                                <div class="account-name">${acc.name}</div>
+                                <div class="account-balance">€${balance.toFixed(2)}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // Lista transazioni
+        function updateTransactionsList(trans) {
+            const list = document.getElementById('transactionsList');
+            
+            if (trans.length === 0) {
+                list.innerHTML = `<div class="empty-state"><h3>Nessuna transazione</h3></div>`;
+                return;
+            }
+
+            const sorted = [...trans].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            list.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Dettaglio</th>
+                            <th>Conto</th>
+                            <th class="text-right">Importo</th>
+                            <th class="text-center">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sorted.map(t => {
+                            let badgeClass, typeLabel, detail, accountInfo;
+                            
+                            if (t.type === 'transfer') {
+                                badgeClass = 'badge-transfer';
+                                typeLabel = t.operationType;
+                                const fromAcc = accounts.find(a => a.id === t.fromAccount);
+                                const toAcc = accounts.find(a => a.id === t.toAccount);
+                                detail = t.description || '-';
+                                accountInfo = `${fromAcc?.name} → ${toAcc?.name}`;
+                            } else {
+                                badgeClass = t.type === 'income' ? 'badge-income' :
+                                            t.type === 'expense-necessity' ? 'badge-necessity' :
+                                            t.type === 'expense-extra' ? 'badge-extra' : 'badge-withdrawal';
+                                typeLabel = t.type === 'income' ? 'Entrata' :
+                                           t.type === 'expense-necessity' ? 'Necessità' :
+                                           t.type === 'expense-extra' ? 'Extra' : 'Prelievo';
+                                detail = `${t.category}${t.description ? ' - ' + t.description : ''}`;
+                                const acc = accounts.find(a => a.id === t.account);
+                                accountInfo = acc?.name || '-';
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td>${new Date(t.date).toLocaleDateString('it-IT')}</td>
+                                    <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
+                                    <td>${detail}</td>
+                                    <td>${accountInfo}</td>
+                                    <td class="text-right" style="font-weight: bold; color: ${t.type === 'income' ? '#10b981' : '#ef4444'}">
+                                        ${t.type === 'income' ? '+' : '-'}€${t.amount.toFixed(2)}
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn-danger" onclick="deleteTransaction(${t.id})">Elimina</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Lista categorie
+        function updateCategoriesList(trans) {
+            const categoryTotals = {};
+            
+            trans.filter(t => t.type !== 'income' && t.type !== 'transfer').forEach(t => {
+                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+            });
+
+            const list = document.getElementById('categoriesList');
+            
+            if (Object.keys(categoryTotals).length === 0) {
+                list.innerHTML = `<div class="empty-state"><h3>Nessuna spesa</h3></div>`;
+                return;
+            }
+
+            const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+
+            list.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    ${sorted.map(([cat, amount]) => `
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600;">${cat}</span>
+                            <span style="font-weight: bold; color: #ef4444; font-size: 18px;">€${amount.toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Aggiorna vista analisi
+        function updateAnalysisView() {
+            updateTrendChart();
+            updatePieChart();
+            updateCategoryChart();
+            updateStatsGrid();
+            updateComparisonTable();
+        }
+
+        // Grafico andamento
+        function updateTrendChart() {
+            const data = getLast6MonthsData();
+            
+            const ctx = document.getElementById('trendChart');
+            if (trendChart) trendChart.destroy();
+            
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.label),
+                    datasets: [
+                        {
+                            label: 'Entrate',
+                            data: data.map(d => d.income),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Uscite',
+                            data: data.map(d => d.expenses),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Netto',
+                            data: data.map(d => d.net),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Grafico a torta
+        function updatePieChart() {
+            const filtered = getFilteredTransactions();
+            const categoryTotals = {};
+            
+            filtered.filter(t => t.type !== 'income' && t.type !== 'transfer').forEach(t => {
+                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+            });
+
+            const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            
+            const ctx = document.getElementById('pieChart');
+            if (pieChart) pieChart.destroy();
+            
+            if (sorted.length === 0) {
+                ctx.parentElement.innerHTML = '<div class="empty-state"><h3>Nessuna spesa da visualizzare</h3></div><canvas id="pieChart"></canvas>';
+                return;
+            }
+            
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: sorted.map(([cat]) => cat),
+                    datasets: [{
+                        data: sorted.map(([_, amount]) => amount),
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                            '#43e97b', '#fa709a', '#fee140', '#30cfd0'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+        }
+
+        // Grafico categorie
+        function updateCategoryChart() {
+            const filtered = getFilteredTransactions();
+            const categoryTotals = {};
+            
+            filtered.filter(t => t.type !== 'income' && t.type !== 'transfer').forEach(t => {
+                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+            });
+
+            const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            
+            const ctx = document.getElementById('categoryChart');
+            if (categoryChart) categoryChart.destroy();
+            
+            if (sorted.length === 0) {
+                ctx.parentElement.innerHTML = '<div class="empty-state"><h3>Nessuna spesa da visualizzare</h3></div><canvas id="categoryChart"></canvas>';
+                return;
+            }
+            
+            categoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(([cat]) => cat),
+                    datasets: [{
+                        label: 'Spesa (€)',
+                        data: sorted.map(([_, amount]) => amount),
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Statistiche
+        function updateStatsGrid() {
+            const data = getLast6MonthsData();
+            const avgIncome = data.reduce((sum, m) => sum + m.income, 0) / data.length;
+            const avgExpenses = data.reduce((sum, m) => sum + m.expenses, 0) / data.length;
+            const avgNet = data.reduce((sum, m) => sum + m.net, 0) / data.length;
+            
+            const currentStats = calculateStats(getFilteredTransactions());
+            const savingsRate = currentStats.income > 0 ? ((currentStats.net / currentStats.income) * 100) : 0;
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-box">
+                    <div class="label">Media Entrate (6 mesi)</div>
+                    <div class="value">€${avgIncome.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Media Uscite (6 mesi)</div>
+                    <div class="value">€${avgExpenses.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Media Netto (6 mesi)</div>
+                    <div class="value">€${avgNet.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Tasso Risparmio</div>
+                    <div class="value">${savingsRate.toFixed(1)}%</div>
+                </div>
+            `;
+        }
+
+        // Tabella confronto
+        function updateComparisonTable() {
+            const data = getLast6MonthsData();
+            
+            document.getElementById('comparisonTable').innerHTML = `
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Mese</th>
+                            <th class="text-right">Entrate</th>
+                            <th class="text-right">Uscite</th>
+                            <th class="text-right">Netto</th>
+                            <th class="text-center">Var. vs Precedente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map((m, i) => {
+                            let variation = '';
+                            if (i > 0) {
+                                const diff = m.net - data[i - 1].net;
+                                const percent = data[i - 1].net !== 0 ? ((diff / Math.abs(data[i - 1].net)) * 100) : 0;
+                                variation = `<span class="${diff >= 0 ? 'trend-up' : 'trend-down'}">
+                                    ${diff >= 0 ? '▲' : '▼'} €${Math.abs(diff).toFixed(2)} (${percent.toFixed(1)}%)
+                                </span>`;
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td><strong>${m.label}</strong></td>
+                                    <td class="text-right">€${m.income.toFixed(2)}</td>
+                                    <td class="text-right">€${m.expenses.toFixed(2)}</td>
+                                    <td class="text-right" style="color: ${m.net >= 0 ? '#10b981' : '#ef4444'}; font-weight: bold;">
+                                        €${m.net.toFixed(2)}
+                                    </td>
+                                    <td class="text-center">${variation || '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Switch tab
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('dashboardView').style.display = tab === 'dashboard' ? 'block' : 'none';
+            document.getElementById('accountsView').style.display = tab === 'accounts' ? 'block' : 'none';
+            document.getElementById('transactionsView').style.display = tab === 'transactions' ? 'block' : 'none';
+            document.getElementById('categoriesView').style.display = tab === 'categories' ? 'block' : 'none';
+            document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
+            
+            if (tab === 'analysis') {
+                updateAnalysisView();
+            }
+        }
+
+        // Inizializza
+        updateView();
+    </script>
+</body>
+</html>
