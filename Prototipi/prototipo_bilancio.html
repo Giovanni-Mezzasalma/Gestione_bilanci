@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Bilancio Completo - Versione Finale</title>
+    <title>Gestione Bilancio - Versione Completa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -325,6 +325,12 @@
             gap: 15px;
         }
 
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -456,6 +462,39 @@
             flex: 1;
         }
 
+        .custom-chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .custom-chart-card.highlight {
+            border-color: #667eea;
+        }
+
+        .chart-config {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
         @media (max-width: 768px) {
             .kpi-grid {
                 grid-template-columns: 1fr;
@@ -466,7 +505,7 @@
                 align-items: stretch;
             }
 
-            .form-row {
+            .form-row, .form-row-3 {
                 grid-template-columns: 1fr;
             }
 
@@ -474,12 +513,29 @@
                 height: 300px;
             }
         }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>💰 Gestione Bilancio Completo</h1>
+            <h1>💰 Gestione Bilancio Completa</h1>
             
             <div class="quick-actions">
                 <button class="btn btn-primary" onclick="openTransactionModal()">💵 Entrata/Spesa</button>
@@ -517,7 +573,8 @@
                 <button class="tab" onclick="switchTab('accounts')">🏦 Conti</button>
                 <button class="tab" onclick="switchTab('transactions')">📝 Transazioni</button>
                 <button class="tab" onclick="switchTab('categories')">📂 Categorie</button>
-                <button class="tab" onclick="switchTab('analysis')">📈 Analisi</button>
+                <button class="tab" onclick="switchTab('customCharts')">📈 Grafici Personalizzati</button>
+                <button class="tab" onclick="switchTab('analysis')">📊 Analisi</button>
             </div>
         </div>
 
@@ -546,9 +603,20 @@
             </div>
         </div>
 
+        <div id="customChartsView" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>📈 Grafici Personalizzati</h2>
+                    <button class="btn btn-primary" onclick="createNewChart()">+ Nuovo Grafico</button>
+                </div>
+                
+                <div id="customChartsContainer"></div>
+            </div>
+        </div>
+
         <div id="analysisView" style="display: none;">
             <div class="card">
-                <h2>📈 Analisi Avanzata</h2>
+                <h2>📊 Analisi Standard</h2>
                 
                 <h3>Andamento Ultimi 6 Mesi</h3>
                 <div class="chart-container">
@@ -574,6 +642,118 @@
         </div>
     </div>
 
+    <!-- Modal Configurazione Grafico -->
+    <div class="modal" id="chartConfigModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="chartModalTitle">Nuovo Grafico Personalizzato</h2>
+                <button class="close-btn" onclick="closeModal('chartConfigModal')">&times;</button>
+            </div>
+
+            <form onsubmit="saveCustomChart(event)">
+                <input type="hidden" id="editChartId">
+
+                <div class="form-group">
+                    <label>Titolo Grafico</label>
+                    <input type="text" id="chartTitle" placeholder="Es: Andamento Entrate 2025" required>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Tipo Grafico</label>
+                        <select id="chartType" required>
+                            <option value="line">Linee</option>
+                            <option value="bar">Barre</option>
+                            <option value="pie">Torta</option>
+                            <option value="doughnut">Ciambella</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Periodo</label>
+                        <select id="chartPeriod" onchange="updatePeriodInputs()" required>
+                            <option value="last3">Ultimi 3 Mesi</option>
+                            <option value="last6">Ultimi 6 Mesi</option>
+                            <option value="last12">Ultimi 12 Mesi</option>
+                            <option value="currentYear">Anno Corrente</option>
+                            <option value="custom">Periodo Personalizzato</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Visualizza Dati</label>
+                        <select id="chartDataType" onchange="updateDataOptions()" required>
+                            <option value="overview">Panoramica (Entrate/Uscite/Netto)</option>
+                            <option value="categories">Per Categoria</option>
+                            <option value="accounts">Per Conto</option>
+                            <option value="categoryDetail">Dettaglio Categoria Specifica</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customPeriodInputs" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Inizio</label>
+                            <input type="month" id="customStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Fine</label>
+                            <input type="month" id="customEndDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="specificCategoryInput" style="display: none;">
+                    <div class="form-group">
+                        <label>Seleziona Categoria</label>
+                        <select id="specificCategory"></select>
+                    </div>
+                </div>
+
+                <div id="overviewOptions">
+                    <div class="form-group">
+                        <label>Dati da Mostrare</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showIncome" checked>
+                                <label for="showIncome">Entrate</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showExpenses" checked>
+                                <label for="showExpenses">Uscite</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showNet" checked>
+                                <label for="showNet">Netto</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showNecessity">
+                                <label for="showNecessity">Solo Necessità</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showExtra">
+                                <label for="showExtra">Solo Extra</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="accountOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Conti da Includere</label>
+                        <div class="checkbox-group" id="accountCheckboxes"></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Salva Grafico</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('chartConfigModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Transazione -->
     <div class="modal" id="transactionModal">
         <div class="modal-content">
@@ -581,13 +761,11 @@
                 <h2>Nuova Transazione</h2>
                 <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
             </div>
-
             <form onsubmit="addTransaction(event)">
                 <div class="form-group">
                     <label>Data</label>
                     <input type="date" id="txDate" required>
                 </div>
-
                 <div class="form-group">
                     <label>Tipo</label>
                     <select id="txType" onchange="updateTransactionCategories()" required>
@@ -597,33 +775,24 @@
                         <option value="withdrawal">Prelievo</option>
                     </select>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Categoria</label>
-                        <select id="txCategory" required>
-                            <option value="">Seleziona</option>
-                        </select>
+                        <select id="txCategory" required><option value="">Seleziona</option></select>
                     </div>
-
                     <div class="form-group">
                         <label>Conto</label>
-                        <select id="txAccount" required>
-                            <option value="">Seleziona</option>
-                        </select>
+                        <select id="txAccount" required><option value="">Seleziona</option></select>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>Importo (€)</label>
                     <input type="number" id="txAmount" step="0.01" min="0" required>
                 </div>
-
                 <div class="form-group">
                     <label>Descrizione (opzionale)</label>
                     <input type="text" id="txDescription">
                 </div>
-
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">Aggiungi</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('transactionModal')">Annulla</button>
@@ -639,13 +808,11 @@
                 <h2>Nuovo Trasferimento</h2>
                 <button class="close-btn" onclick="closeModal('transferModal')">&times;</button>
             </div>
-
             <form onsubmit="addTransfer(event)">
                 <div class="form-group">
                     <label>Data</label>
                     <input type="date" id="trDate" required>
                 </div>
-
                 <div class="form-group">
                     <label>Tipo Operazione</label>
                     <select id="trType" required>
@@ -654,33 +821,24 @@
                         <option value="Investimenti">Verso Investimenti</option>
                     </select>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Da Conto</label>
-                        <select id="trFrom" required>
-                            <option value="">Seleziona</option>
-                        </select>
+                        <select id="trFrom" required><option value="">Seleziona</option></select>
                     </div>
-
                     <div class="form-group">
                         <label>A Conto</label>
-                        <select id="trTo" required>
-                            <option value="">Seleziona</option>
-                        </select>
+                        <select id="trTo" required><option value="">Seleziona</option></select>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>Importo (€)</label>
                     <input type="number" id="trAmount" step="0.01" min="0" required>
                 </div>
-
                 <div class="form-group">
                     <label>Descrizione (opzionale)</label>
                     <input type="text" id="trDescription">
                 </div>
-
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn btn-success" style="flex: 1;">Trasferisci</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('transferModal')">Annulla</button>
@@ -696,16 +854,13 @@
                 <h2>Gestisci Conti</h2>
                 <button class="close-btn" onclick="closeModal('accountModal')">&times;</button>
             </div>
-
             <div id="accountManagement"></div>
-
             <h3 style="margin-top: 30px; margin-bottom: 15px;">Aggiungi Nuovo Conto</h3>
             <form onsubmit="addAccount(event)">
                 <div class="form-group">
                     <label>Nome Conto</label>
                     <input type="text" id="accName" required>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo</label>
@@ -715,13 +870,11 @@
                             <option value="investment">Investimento</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label>Saldo Iniziale (€)</label>
                         <input type="number" id="accBalance" step="0.01" value="0" required>
                     </div>
                 </div>
-
                 <button type="submit" class="btn btn-info" style="width: 100%;">Aggiungi Conto</button>
             </form>
         </div>
@@ -734,11 +887,9 @@
                 <h2>Gestisci Categorie e Sottocategorie</h2>
                 <button class="close-btn" onclick="closeModal('categoryModal')">&times;</button>
             </div>
-
             <div style="margin-bottom: 20px;">
                 <button class="btn btn-secondary btn-small" onclick="resetCategoriesToDefault()">🔄 Ripristina Categorie di Default</button>
             </div>
-
             <div class="category-manager" id="categoryManager"></div>
         </div>
     </div>
@@ -762,7 +913,6 @@
             'withdrawal': ['Prelievo']
         };
 
-        // Dati iniziali
         const defaultAccounts = [
             { id: 1, name: 'N26', type: 'current', initialBalance: 0 },
             { id: 2, name: 'Intesa SanPaolo', type: 'current', initialBalance: 0 },
@@ -770,19 +920,18 @@
             { id: 4, name: 'PayPal', type: 'current', initialBalance: 0 }
         ];
 
-        // Variabili globali per i grafici
+        // Variabili globali
         let trendChart = null;
         let pieChart = null;
         let categoryChart = null;
+        let customCharts = [];
 
-        // Inizializza
         const today = new Date();
         document.getElementById('monthSelect').value = today.getMonth();
         document.getElementById('yearSelect').value = today.getFullYear();
         document.getElementById('txDate').value = today.toISOString().split('T')[0];
         document.getElementById('trDate').value = today.toISOString().split('T')[0];
 
-        // Carica/Salva dati
         function loadData(key, defaultValue) {
             const saved = localStorage.getItem(key);
             return saved ? JSON.parse(saved) : defaultValue;
@@ -795,8 +944,9 @@
         let accounts = loadData('accounts', defaultAccounts);
         let transactions = loadData('transactions', []);
         let categories = loadData('categories', JSON.parse(JSON.stringify(defaultCategories)));
+        let savedCharts = loadData('customCharts', []);
 
-        // Gestione Categorie
+        // ===== GESTIONE CATEGORIE (COMPLETA) =====
         function openCategoryModal() {
             document.getElementById('categoryModal').classList.add('active');
             renderCategoryManager();
@@ -951,7 +1101,463 @@
             }
         }
 
-        // Modal
+        // ===== GESTIONE GRAFICI PERSONALIZZATI =====
+        function createNewChart() {
+            document.getElementById('chartModalTitle').textContent = 'Nuovo Grafico Personalizzato';
+            document.getElementById('editChartId').value = '';
+            document.getElementById('chartTitle').value = '';
+            document.getElementById('chartType').value = 'line';
+            document.getElementById('chartPeriod').value = 'last6';
+            document.getElementById('chartDataType').value = 'overview';
+            updatePeriodInputs();
+            updateDataOptions();
+            updateAccountCheckboxes();
+            document.getElementById('chartConfigModal').classList.add('active');
+        }
+
+        function updatePeriodInputs() {
+            const period = document.getElementById('chartPeriod').value;
+            document.getElementById('customPeriodInputs').style.display = 
+                period === 'custom' ? 'block' : 'none';
+        }
+
+        function updateDataOptions() {
+            const dataType = document.getElementById('chartDataType').value;
+            document.getElementById('overviewOptions').style.display = 
+                dataType === 'overview' ? 'block' : 'none';
+            document.getElementById('accountOptions').style.display = 
+                dataType === 'accounts' ? 'block' : 'none';
+            document.getElementById('specificCategoryInput').style.display = 
+                dataType === 'categoryDetail' ? 'block' : 'none';
+
+            if (dataType === 'categoryDetail') {
+                updateCategoryOptions();
+            }
+        }
+
+        function updateCategoryOptions() {
+            const select = document.getElementById('specificCategory');
+            select.innerHTML = '<option value="">Seleziona categoria</option>';
+            
+            Object.values(categories).forEach(catGroup => {
+                if (Array.isArray(catGroup)) {
+                    catGroup.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        select.appendChild(option);
+                    });
+                } else {
+                    Object.values(catGroup).forEach(subcats => {
+                        subcats.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat;
+                            option.textContent = cat;
+                            select.appendChild(option);
+                        });
+                    });
+                }
+            });
+        }
+
+        function updateAccountCheckboxes() {
+            const container = document.getElementById('accountCheckboxes');
+            container.innerHTML = accounts.map(acc => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="acc-${acc.id}" value="${acc.id}" checked>
+                    <label for="acc-${acc.id}">${acc.name}</label>
+                </div>
+            `).join('');
+        }
+
+        function saveCustomChart(event) {
+            event.preventDefault();
+
+            const chartId = document.getElementById('editChartId').value || Date.now();
+            const config = {
+                id: parseInt(chartId),
+                title: document.getElementById('chartTitle').value,
+                type: document.getElementById('chartType').value,
+                period: document.getElementById('chartPeriod').value,
+                dataType: document.getElementById('chartDataType').value,
+                options: {}
+            };
+
+            if (config.period === 'custom') {
+                config.options.startDate = document.getElementById('customStartDate').value;
+                config.options.endDate = document.getElementById('customEndDate').value;
+            }
+
+            if (config.dataType === 'overview') {
+                config.options.showIncome = document.getElementById('showIncome').checked;
+                config.options.showExpenses = document.getElementById('showExpenses').checked;
+                config.options.showNet = document.getElementById('showNet').checked;
+                config.options.showNecessity = document.getElementById('showNecessity').checked;
+                config.options.showExtra = document.getElementById('showExtra').checked;
+            } else if (config.dataType === 'accounts') {
+                config.options.selectedAccounts = Array.from(
+                    document.querySelectorAll('#accountCheckboxes input:checked')
+                ).map(cb => parseInt(cb.value));
+            } else if (config.dataType === 'categoryDetail') {
+                config.options.category = document.getElementById('specificCategory').value;
+            }
+
+            const existingIndex = savedCharts.findIndex(c => c.id === config.id);
+            if (existingIndex >= 0) {
+                savedCharts[existingIndex] = config;
+            } else {
+                savedCharts.push(config);
+            }
+
+            saveData('customCharts', savedCharts);
+            closeModal('chartConfigModal');
+            renderCustomCharts();
+        }
+
+        function deleteCustomChart(id) {
+            if (confirm('Sei sicuro di voler eliminare questo grafico?')) {
+                savedCharts = savedCharts.filter(c => c.id !== id);
+                saveData('customCharts', savedCharts);
+                renderCustomCharts();
+            }
+        }
+
+        function editCustomChart(id) {
+            const chart = savedCharts.find(c => c.id === id);
+            if (!chart) return;
+
+            document.getElementById('chartModalTitle').textContent = 'Modifica Grafico';
+            document.getElementById('editChartId').value = chart.id;
+            document.getElementById('chartTitle').value = chart.title;
+            document.getElementById('chartType').value = chart.type;
+            document.getElementById('chartPeriod').value = chart.period;
+            document.getElementById('chartDataType').value = chart.dataType;
+
+            updatePeriodInputs();
+            updateDataOptions();
+            updateAccountCheckboxes();
+
+            if (chart.period === 'custom') {
+                document.getElementById('customStartDate').value = chart.options.startDate || '';
+                document.getElementById('customEndDate').value = chart.options.endDate || '';
+            }
+
+            if (chart.dataType === 'overview') {
+                document.getElementById('showIncome').checked = chart.options.showIncome !== false;
+                document.getElementById('showExpenses').checked = chart.options.showExpenses !== false;
+                document.getElementById('showNet').checked = chart.options.showNet !== false;
+                document.getElementById('showNecessity').checked = chart.options.showNecessity || false;
+                document.getElementById('showExtra').checked = chart.options.showExtra || false;
+            } else if (chart.dataType === 'accounts' && chart.options.selectedAccounts) {
+                document.querySelectorAll('#accountCheckboxes input').forEach(cb => {
+                    cb.checked = chart.options.selectedAccounts.includes(parseInt(cb.value));
+                });
+            } else if (chart.dataType === 'categoryDetail') {
+                document.getElementById('specificCategory').value = chart.options.category || '';
+            }
+
+            document.getElementById('chartConfigModal').classList.add('active');
+        }
+
+        function renderCustomCharts() {
+            const container = document.getElementById('customChartsContainer');
+            
+            if (savedCharts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Nessun grafico personalizzato</h3>
+                        <p>Clicca su "+ Nuovo Grafico" per iniziare</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = savedCharts.map(chart => `
+                <div class="custom-chart-card" id="chart-${chart.id}">
+                    <div class="chart-header">
+                        <div class="chart-title">${chart.title}</div>
+                        <div>
+                            <button class="btn btn-info btn-small" onclick="editCustomChart(${chart.id})">✏️ Modifica</button>
+                            <button class="btn-danger btn-small" onclick="deleteCustomChart(${chart.id})">🗑️ Elimina</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="custom-chart-${chart.id}"></canvas>
+                    </div>
+                </div>
+            `).join('');
+
+            savedCharts.forEach(chart => {
+                renderSingleCustomChart(chart);
+            });
+        }
+
+        function renderSingleCustomChart(config) {
+            const data = getChartData(config);
+            const ctx = document.getElementById(`custom-chart-${config.id}`);
+            
+            if (customCharts[config.id]) {
+                customCharts[config.id].destroy();
+            }
+
+            customCharts[config.id] = new Chart(ctx, {
+                type: config.type,
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: config.type === 'pie' || config.type === 'doughnut' ? 'right' : 'top'
+                        }
+                    },
+                    scales: config.type === 'pie' || config.type === 'doughnut' ? {} : {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function getChartData(config) {
+            const periodData = getPeriodData(config.period, config.options);
+            
+            if (config.dataType === 'overview') {
+                return getOverviewData(periodData, config);
+            } else if (config.dataType === 'categories') {
+                return getCategoriesData(periodData, config);
+            } else if (config.dataType === 'accounts') {
+                return getAccountsData(periodData, config);
+            } else if (config.dataType === 'categoryDetail') {
+                return getCategoryDetailData(periodData, config);
+            }
+        }
+
+        function getPeriodData(period, options = {}) {
+            const data = [];
+            let startDate, endDate, months;
+
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            switch (period) {
+                case 'last3':
+                    months = 3;
+                    break;
+                case 'last6':
+                    months = 6;
+                    break;
+                case 'last12':
+                    months = 12;
+                    break;
+                case 'currentYear':
+                    startDate = new Date(currentYear, 0, 1);
+                    endDate = new Date(currentYear, 11, 31);
+                    months = 12;
+                    break;
+                case 'custom':
+                    if (options.startDate && options.endDate) {
+                        const start = new Date(options.startDate + '-01');
+                        const end = new Date(options.endDate + '-01');
+                        months = (end.getFullYear() - start.getFullYear()) * 12 + 
+                                (end.getMonth() - start.getMonth()) + 1;
+                        startDate = start;
+                    } else {
+                        months = 6;
+                    }
+                    break;
+                default:
+                    months = 6;
+            }
+
+            for (let i = months - 1; i >= 0; i--) {
+                const date = startDate ? 
+                    new Date(startDate.getFullYear(), startDate.getMonth() + (months - 1 - i), 1) :
+                    new Date(currentYear, currentMonth - i, 1);
+                
+                const month = date.getMonth();
+                const year = date.getFullYear();
+                
+                const monthTrans = transactions.filter(t => {
+                    const tDate = new Date(t.date);
+                    return tDate.getMonth() === month && tDate.getFullYear() === year;
+                });
+
+                data.push({
+                    label: date.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' }),
+                    date: date,
+                    transactions: monthTrans
+                });
+            }
+
+            return data;
+        }
+
+        function getOverviewData(periodData, config) {
+            const datasets = [];
+            
+            if (config.options.showIncome) {
+                datasets.push({
+                    label: 'Entrate',
+                    data: periodData.map(p => {
+                        return p.transactions
+                            .filter(t => t.type === 'income')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                    }),
+                    borderColor: '#10b981',
+                    backgroundColor: config.type === 'bar' ? '#10b981' : 'rgba(16, 185, 129, 0.2)',
+                    tension: 0.4
+                });
+            }
+
+            if (config.options.showExpenses) {
+                datasets.push({
+                    label: 'Uscite',
+                    data: periodData.map(p => {
+                        return p.transactions
+                            .filter(t => t.type !== 'income' && t.type !== 'transfer')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                    }),
+                    borderColor: '#ef4444',
+                    backgroundColor: config.type === 'bar' ? '#ef4444' : 'rgba(239, 68, 68, 0.2)',
+                    tension: 0.4
+                });
+            }
+
+            if (config.options.showNecessity) {
+                datasets.push({
+                    label: 'Spese Necessità',
+                    data: periodData.map(p => {
+                        return p.transactions
+                            .filter(t => t.type === 'expense-necessity')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                    }),
+                    borderColor: '#f59e0b',
+                    backgroundColor: config.type === 'bar' ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)',
+                    tension: 0.4
+                });
+            }
+
+            if (config.options.showExtra) {
+                datasets.push({
+                    label: 'Spese Extra',
+                    data: periodData.map(p => {
+                        return p.transactions
+                            .filter(t => t.type === 'expense-extra')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                    }),
+                    borderColor: '#8b5cf6',
+                    backgroundColor: config.type === 'bar' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.2)',
+                    tension: 0.4
+                });
+            }
+
+            if (config.options.showNet) {
+                datasets.push({
+                    label: 'Netto',
+                    data: periodData.map(p => {
+                        const income = p.transactions.filter(t => t.type === 'income')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                        const expenses = p.transactions.filter(t => t.type !== 'income' && t.type !== 'transfer')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                        return income - expenses;
+                    }),
+                    borderColor: '#3b82f6',
+                    backgroundColor: config.type === 'bar' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)',
+                    tension: 0.4
+                });
+            }
+
+            return {
+                labels: periodData.map(p => p.label),
+                datasets: datasets
+            };
+        }
+
+        function getCategoriesData(periodData, config) {
+            const categoryTotals = {};
+            
+            periodData.forEach(p => {
+                p.transactions.filter(t => t.type !== 'income' && t.type !== 'transfer').forEach(t => {
+                    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+                });
+            });
+
+            const sorted = Object.entries(categoryTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            return {
+                labels: sorted.map(([cat]) => cat),
+                datasets: [{
+                    label: 'Spesa Totale',
+                    data: sorted.map(([_, amount]) => amount),
+                    backgroundColor: [
+                        '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                        '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+                        '#a8edea', '#fed6e3'
+                    ]
+                }]
+            };
+        }
+
+        function getAccountsData(periodData, config) {
+            const selectedAccounts = config.options.selectedAccounts || accounts.map(a => a.id);
+            const datasets = [];
+
+            selectedAccounts.forEach((accId, index) => {
+                const account = accounts.find(a => a.id === accId);
+                if (!account) return;
+
+                const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                
+                datasets.push({
+                    label: account.name,
+                    data: periodData.map(p => {
+                        let balance = 0;
+                        p.transactions.forEach(t => {
+                            if (t.type === 'transfer') {
+                                if (t.fromAccount === accId) balance -= t.amount;
+                                if (t.toAccount === accId) balance += t.amount;
+                            } else if (t.account === accId) {
+                                if (t.type === 'income') balance += t.amount;
+                                else balance -= t.amount;
+                            }
+                        });
+                        return balance;
+                    }),
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: config.type === 'bar' ? colors[index % colors.length] : 
+                        `${colors[index % colors.length]}33`,
+                    tension: 0.4
+                });
+            });
+
+            return {
+                labels: periodData.map(p => p.label),
+                datasets: datasets
+            };
+        }
+
+        function getCategoryDetailData(periodData, config) {
+            const category = config.options.category;
+            
+            return {
+                labels: periodData.map(p => p.label),
+                datasets: [{
+                    label: category,
+                    data: periodData.map(p => {
+                        return p.transactions
+                            .filter(t => t.category === category)
+                            .reduce((sum, t) => sum + t.amount, 0);
+                    }),
+                    borderColor: '#667eea',
+                    backgroundColor: config.type === 'bar' ? '#667eea' : 'rgba(102, 126, 234, 0.2)',
+                    tension: 0.4
+                }]
+            };
+        }
+
+        // ===== MODAL E FUNZIONI BASE =====
         function openTransactionModal() {
             document.getElementById('transactionModal').classList.add('active');
             updateTransactionCategories();
@@ -973,7 +1579,6 @@
             document.getElementById(id).classList.remove('active');
         }
 
-        // Popola select conti
         function populateAccountsSelect(selectId) {
             const select = document.getElementById(selectId);
             select.innerHTML = '<option value="">Seleziona</option>';
@@ -986,15 +1591,10 @@
         }
 
         function getAccountTypeLabel(type) {
-            const labels = {
-                'current': 'Corrente',
-                'savings': 'Risparmio',
-                'investment': 'Investimento'
-            };
+            const labels = { 'current': 'Corrente', 'savings': 'Risparmio', 'investment': 'Investimento' };
             return labels[type] || type;
         }
 
-        // Aggiorna categorie
         function updateTransactionCategories() {
             const type = document.getElementById('txType').value;
             const select = document.getElementById('txCategory');
@@ -1023,7 +1623,6 @@
             }
         }
 
-        // Aggiungi transazione
         function addTransaction(event) {
             event.preventDefault();
             
@@ -1046,7 +1645,6 @@
             updateView();
         }
 
-        // Aggiungi trasferimento
         function addTransfer(event) {
             event.preventDefault();
             
@@ -1070,7 +1668,6 @@
             updateView();
         }
 
-        // Gestione conti
         function updateAccountManagement() {
             const container = document.getElementById('accountManagement');
             container.innerHTML = `
@@ -1124,7 +1721,6 @@
             }
         }
 
-        // Calcola saldo conto
         function calculateAccountBalance(accountId) {
             const account = accounts.find(a => a.id === accountId);
             let balance = account ? account.initialBalance : 0;
@@ -1142,7 +1738,6 @@
             return balance;
         }
 
-        // Elimina transazione
         function deleteTransaction(id) {
             if (confirm('Sei sicuro di voler eliminare questa transazione?')) {
                 transactions = transactions.filter(t => t.id !== id);
@@ -1151,7 +1746,6 @@
             }
         }
 
-        // Filtra transazioni
         function getFilteredTransactions() {
             const month = parseInt(document.getElementById('monthSelect').value);
             const year = parseInt(document.getElementById('yearSelect').value);
@@ -1162,12 +1756,8 @@
             });
         }
 
-        // Calcola statistiche
         function calculateStats(trans) {
-            let income = 0;
-            let expenseNecessity = 0;
-            let expenseExtra = 0;
-            let withdrawals = 0;
+            let income = 0, expenseNecessity = 0, expenseExtra = 0, withdrawals = 0;
 
             trans.forEach(t => {
                 if (t.type === 'income') income += t.amount;
@@ -1186,7 +1776,6 @@
             };
         }
 
-        // Ottieni dati ultimi 6 mesi
         function getLast6MonthsData() {
             const currentMonth = parseInt(document.getElementById('monthSelect').value);
             const currentYear = parseInt(document.getElementById('yearSelect').value);
@@ -1215,12 +1804,10 @@
             return months;
         }
 
-        // Aggiorna vista
         function updateView() {
             const filtered = getFilteredTransactions();
             const stats = calculateStats(filtered);
 
-            // KPI
             const totalBalance = accounts.reduce((sum, acc) => sum + calculateAccountBalance(acc.id), 0);
             
             document.getElementById('kpiGrid').innerHTML = `
@@ -1245,10 +1832,8 @@
             updateAccountsView();
             updateTransactionsList(filtered);
             updateCategoriesList(filtered);
-            updateAnalysisView();
         }
 
-        // Vista conti
         function updateAccountsView() {
             const grid = document.getElementById('accountsGrid');
             grid.innerHTML = `
@@ -1267,7 +1852,6 @@
             `;
         }
 
-        // Lista transazioni
         function updateTransactionsList(trans) {
             const list = document.getElementById('transactionsList');
             
@@ -1278,62 +1862,47 @@
 
             const sorted = [...trans].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            list.innerHTML = `
-                <table>
-                    <thead>
+            list.innerHTML = `<table><thead><tr><th>Data</th><th>Tipo</th><th>Dettaglio</th><th>Conto</th><th class="text-right">Importo</th><th class="text-center">Azioni</th></tr></thead><tbody>
+                ${sorted.map(t => {
+                    let badgeClass, typeLabel, detail, accountInfo;
+                    
+                    if (t.type === 'transfer') {
+                        badgeClass = 'badge-transfer';
+                        typeLabel = t.operationType;
+                        const fromAcc = accounts.find(a => a.id === t.fromAccount);
+                        const toAcc = accounts.find(a => a.id === t.toAccount);
+                        detail = t.description || '-';
+                        accountInfo = `${fromAcc?.name} → ${toAcc?.name}`;
+                    } else {
+                        badgeClass = t.type === 'income' ? 'badge-income' :
+                                    t.type === 'expense-necessity' ? 'badge-necessity' :
+                                    t.type === 'expense-extra' ? 'badge-extra' : 'badge-withdrawal';
+                        typeLabel = t.type === 'income' ? 'Entrata' :
+                                   t.type === 'expense-necessity' ? 'Necessità' :
+                                   t.type === 'expense-extra' ? 'Extra' : 'Prelievo';
+                        detail = `${t.category}${t.description ? ' - ' + t.description : ''}`;
+                        const acc = accounts.find(a => a.id === t.account);
+                        accountInfo = acc?.name || '-';
+                    }
+                    
+                    return `
                         <tr>
-                            <th>Data</th>
-                            <th>Tipo</th>
-                            <th>Dettaglio</th>
-                            <th>Conto</th>
-                            <th class="text-right">Importo</th>
-                            <th class="text-center">Azioni</th>
+                            <td>${new Date(t.date).toLocaleDateString('it-IT')}</td>
+                            <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
+                            <td>${detail}</td>
+                            <td>${accountInfo}</td>
+                            <td class="text-right" style="font-weight: bold; color: ${t.type === 'income' ? '#10b981' : '#ef4444'}">
+                                ${t.type === 'income' ? '+' : '-'}€${t.amount.toFixed(2)}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn-danger" onclick="deleteTransaction(${t.id})">Elimina</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${sorted.map(t => {
-                            let badgeClass, typeLabel, detail, accountInfo;
-                            
-                            if (t.type === 'transfer') {
-                                badgeClass = 'badge-transfer';
-                                typeLabel = t.operationType;
-                                const fromAcc = accounts.find(a => a.id === t.fromAccount);
-                                const toAcc = accounts.find(a => a.id === t.toAccount);
-                                detail = t.description || '-';
-                                accountInfo = `${fromAcc?.name} → ${toAcc?.name}`;
-                            } else {
-                                badgeClass = t.type === 'income' ? 'badge-income' :
-                                            t.type === 'expense-necessity' ? 'badge-necessity' :
-                                            t.type === 'expense-extra' ? 'badge-extra' : 'badge-withdrawal';
-                                typeLabel = t.type === 'income' ? 'Entrata' :
-                                           t.type === 'expense-necessity' ? 'Necessità' :
-                                           t.type === 'expense-extra' ? 'Extra' : 'Prelievo';
-                                detail = `${t.category}${t.description ? ' - ' + t.description : ''}`;
-                                const acc = accounts.find(a => a.id === t.account);
-                                accountInfo = acc?.name || '-';
-                            }
-                            
-                            return `
-                                <tr>
-                                    <td>${new Date(t.date).toLocaleDateString('it-IT')}</td>
-                                    <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
-                                    <td>${detail}</td>
-                                    <td>${accountInfo}</td>
-                                    <td class="text-right" style="font-weight: bold; color: ${t.type === 'income' ? '#10b981' : '#ef4444'}">
-                                        ${t.type === 'income' ? '+' : '-'}€${t.amount.toFixed(2)}
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn-danger" onclick="deleteTransaction(${t.id})">Elimina</button>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            `;
+                    `;
+                }).join('')}
+            </tbody></table>`;
         }
 
-        // Lista categorie
         function updateCategoriesList(trans) {
             const categoryTotals = {};
             
@@ -1362,16 +1931,6 @@
             `;
         }
 
-        // Aggiorna vista analisi
-        function updateAnalysisView() {
-            updateTrendChart();
-            updatePieChart();
-            updateCategoryChart();
-            updateStatsGrid();
-            updateComparisonTable();
-        }
-
-        // Grafico andamento
         function updateTrendChart() {
             const data = getLast6MonthsData();
             
@@ -1423,7 +1982,6 @@
             });
         }
 
-        // Grafico a torta
         function updatePieChart() {
             const filtered = getFilteredTransactions();
             const categoryTotals = {};
@@ -1438,7 +1996,6 @@
             if (pieChart) pieChart.destroy();
             
             if (sorted.length === 0) {
-                ctx.parentElement.innerHTML = '<div class="empty-state"><h3>Nessuna spesa da visualizzare</h3></div><canvas id="pieChart"></canvas>';
                 return;
             }
             
@@ -1466,7 +2023,6 @@
             });
         }
 
-        // Grafico categorie
         function updateCategoryChart() {
             const filtered = getFilteredTransactions();
             const categoryTotals = {};
@@ -1481,7 +2037,6 @@
             if (categoryChart) categoryChart.destroy();
             
             if (sorted.length === 0) {
-                ctx.parentElement.innerHTML = '<div class="empty-state"><h3>Nessuna spesa da visualizzare</h3></div><canvas id="categoryChart"></canvas>';
                 return;
             }
             
@@ -1512,7 +2067,6 @@
             });
         }
 
-        // Statistiche
         function updateStatsGrid() {
             const data = getLast6MonthsData();
             const avgIncome = data.reduce((sum, m) => sum + m.income, 0) / data.length;
@@ -1542,7 +2096,6 @@
             `;
         }
 
-        // Tabella confronto
         function updateComparisonTable() {
             const data = getLast6MonthsData();
             
@@ -1585,7 +2138,6 @@
             `;
         }
 
-        // Switch tab
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -1594,10 +2146,17 @@
             document.getElementById('accountsView').style.display = tab === 'accounts' ? 'block' : 'none';
             document.getElementById('transactionsView').style.display = tab === 'transactions' ? 'block' : 'none';
             document.getElementById('categoriesView').style.display = tab === 'categories' ? 'block' : 'none';
+            document.getElementById('customChartsView').style.display = tab === 'customCharts' ? 'block' : 'none';
             document.getElementById('analysisView').style.display = tab === 'analysis' ? 'block' : 'none';
             
-            if (tab === 'analysis') {
-                updateAnalysisView();
+            if (tab === 'customCharts') {
+                renderCustomCharts();
+            } else if (tab === 'analysis') {
+                updateTrendChart();
+                updatePieChart();
+                updateCategoryChart();
+                updateStatsGrid();
+                updateComparisonTable();
             }
         }
 
