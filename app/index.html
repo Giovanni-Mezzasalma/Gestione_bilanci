@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Bilancio</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💰 Gestione Bilancio Completa</h1>
+            
+            <div class="quick-actions">
+                <button class="btn btn-primary" onclick="app.openTransactionModal()">💵 Entrata/Spesa</button>
+                <button class="btn btn-success" onclick="app.openTransferModal()">🔄 Trasferimento</button>
+                <button class="btn btn-info" onclick="app.openAccountModal()">🏦 Gestisci Conti</button>
+                <button class="btn btn-warning" onclick="app.openCategoryModal()">📂 Gestisci Categorie</button>
+            </div>
+
+            <div class="controls">
+                <select id="monthSelect" onchange="app.updateView()">
+                    <option value="0">Gennaio</option>
+                    <option value="1">Febbraio</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Aprile</option>
+                    <option value="4">Maggio</option>
+                    <option value="5">Giugno</option>
+                    <option value="6">Luglio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Settembre</option>
+                    <option value="9">Ottobre</option>
+                    <option value="10">Novembre</option>
+                    <option value="11">Dicembre</option>
+                </select>
+                
+                <select id="yearSelect" onchange="app.updateView()">
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="app.switchTab('dashboard')">📊 Dashboard</button>
+                <button class="tab" onclick="app.switchTab('accounts')">🏦 Conti</button>
+                <button class="tab" onclick="app.switchTab('transactions')">📝 Transazioni</button>
+                <button class="tab" onclick="app.switchTab('categories')">📂 Categorie</button>
+                <button class="tab" onclick="app.switchTab('customCharts')">📈 Grafici Personalizzati</button>
+                <button class="tab" onclick="app.switchTab('analysis')">📊 Analisi</button>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView">
+            <div class="kpi-grid" id="kpiGrid"></div>
+        </div>
+
+        <!-- Accounts View -->
+        <div id="accountsView" style="display: none;">
+            <div class="card">
+                <h2>I Tuoi Conti</h2>
+                <div id="accountsGrid"></div>
+            </div>
+        </div>
+
+        <!-- Transactions View -->
+        <div id="transactionsView" style="display: none;">
+            <div class="card">
+                <h2>Tutte le Transazioni</h2>
+                <div id="transactionsList"></div>
+            </div>
+        </div>
+
+        <!-- Categories View -->
+        <div id="categoriesView" style="display: none;">
+            <div class="card">
+                <h2>Spese per Categoria</h2>
+                <div id="categoriesList"></div>
+            </div>
+        </div>
+
+        <!-- Custom Charts View -->
+        <div id="customChartsView" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>📈 Grafici Personalizzati</h2>
+                    <button class="btn btn-primary" onclick="app.createNewChart()">+ Nuovo Grafico</button>
+                </div>
+                
+                <div id="customChartsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Analysis View -->
+        <div id="analysisView" style="display: none;">
+            <div class="card">
+                <h2>📊 Analisi Standard</h2>
+                
+                <h3>Andamento Ultimi 6 Mesi</h3>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <h3>Distribuzione Spese Mensili</h3>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="pieChart"></canvas>
+                </div>
+
+                <h3>Confronto per Categoria (Top 10)</h3>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+
+                <h3>Statistiche e Medie</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+
+                <h3>Confronto Mensile</h3>
+                <div class="comparison-table" id="comparisonTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Transazione -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuova Transazione</h2>
+                <button class="close-btn" onclick="app.closeModal('transactionModal')">&times;</button>
+            </div>
+            <form onsubmit="app.addTransaction(event)">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="txDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="txType" onchange="app.updateTransactionCategories()" required>
+                        <option value="income">Entrata</option>
+                        <option value="expense-necessity" selected>Spesa di Necessità</option>
+                        <option value="expense-extra">Spesa Extra</option>
+                        <option value="withdrawal">Prelievo</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="txCategory" required><option value="">Seleziona</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Conto</label>
+                        <select id="txAccount" required><option value="">Seleziona</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Importo (€)</label>
+                    <input type="number" id="txAmount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrizione (opzionale)</label>
+                    <input type="text" id="txDescription">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Aggiungi</button>
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('transactionModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Trasferimento -->
+    <div class="modal" id="transferModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuovo Trasferimento</h2>
+                <button class="close-btn" onclick="app.closeModal('transferModal')">&times;</button>
+            </div>
+            <form onsubmit="app.addTransfer(event)">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="trDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo Operazione</label>
+                    <select id="trType" required>
+                        <option value="Trasferimento">Trasferimento tra conti</option>
+                        <option value="Risparmio">Verso Risparmio</option>
+                        <option value="Investimenti">Verso Investimenti</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Da Conto</label>
+                        <select id="trFrom" required><option value="">Seleziona</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>A Conto</label>
+                        <select id="trTo" required><option value="">Seleziona</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Importo (€)</label>
+                    <input type="number" id="trAmount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrizione (opzionale)</label>
+                    <input type="text" id="trDescription">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Trasferisci</button>
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('transferModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestione Conti -->
+    <div class="modal" id="accountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gestisci Conti</h2>
+                <button class="close-btn" onclick="app.closeModal('accountModal')">&times;</button>
+            </div>
+            <div id="accountManagement"></div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Aggiungi Nuovo Conto</h3>
+            <form onsubmit="app.addAccount(event)">
+                <div class="form-group">
+                    <label>Nome Conto</label>
+                    <input type="text" id="accName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="accType" required>
+                            <option value="current">Conto Corrente</option>
+                            <option value="savings">Risparmio</option>
+                            <option value="investment">Investimento</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo Iniziale (€)</label>
+                        <input type="number" id="accBalance" step="0.01" value="0" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-info" style="width: 100%;">Aggiungi Conto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestione Categorie -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gestisci Categorie e Sottocategorie</h2>
+                <button class="close-btn" onclick="app.closeModal('categoryModal')">&times;</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-secondary btn-small" onclick="app.resetCategoriesToDefault()">🔄 Ripristina Categorie di Default</button>
+            </div>
+            <div class="category-manager" id="categoryManager"></div>
+        </div>
+    </div>
+
+    <!-- Modal Configurazione Grafico -->
+    <div class="modal" id="chartConfigModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="chartModalTitle">Nuovo Grafico Personalizzato</h2>
+                <button class="close-btn" onclick="app.closeModal('chartConfigModal')">&times;</button>
+            </div>
+
+            <form onsubmit="app.saveCustomChart(event)">
+                <input type="hidden" id="editChartId">
+
+                <div class="form-group">
+                    <label>Titolo Grafico</label>
+                    <input type="text" id="chartTitle" placeholder="Es: Andamento Entrate 2025" required>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Tipo Grafico</label>
+                        <select id="chartType" required>
+                            <option value="line">Linee</option>
+                            <option value="bar">Barre</option>
+                            <option value="pie">Torta</option>
+                            <option value="doughnut">Ciambella</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Periodo</label>
+                        <select id="chartPeriod" onchange="app.updatePeriodInputs()" required>
+                            <option value="last3">Ultimi 3 Mesi</option>
+                            <option value="last6">Ultimi 6 Mesi</option>
+                            <option value="last12">Ultimi 12 Mesi</option>
+                            <option value="currentYear">Anno Corrente</option>
+                            <option value="custom">Periodo Personalizzato</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Visualizza Dati</label>
+                        <select id="chartDataType" onchange="app.updateDataOptions()" required>
+                            <option value="overview">Panoramica (Entrate/Uscite/Netto)</option>
+                            <option value="categories">Per Categoria</option>
+                            <option value="accounts">Per Conto</option>
+                            <option value="categoryDetail">Dettaglio Categoria Specifica</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customPeriodInputs" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Inizio</label>
+                            <input type="month" id="customStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Fine</label>
+                            <input type="month" id="customEndDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="specificCategoryInput" style="display: none;">
+                    <div class="form-group">
+                        <label>Seleziona Categoria</label>
+                        <select id="specificCategory"></select>
+                    </div>
+                </div>
+
+                <div id="overviewOptions">
+                    <div class="form-group">
+                        <label>Dati da Mostrare</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showIncome" checked>
+                                <label for="showIncome">Entrate</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showExpenses" checked>
+                                <label for="showExpenses">Uscite</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showNet" checked>
+                                <label for="showNet">Netto</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showNecessity">
+                                <label for="showNecessity">Solo Necessità</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showExtra">
+                                <label for="showExtra">Solo Extra</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="accountOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Conti da Includere</label>
+                        <div class="checkbox-group" id="accountCheckboxes"></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Salva Grafico</button>
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('chartConfigModal')">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
